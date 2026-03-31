@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#141418">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Feed Log">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Feed Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base: #141418;
+      --bg-card: #1f1f24;
+      --bg-input: #18181c;
+      --bg-selected: #2a2a30;
+      --border: #2a2a30;
+      --border-input: #333338;
+      --text-primary: #e0e0e0;
+      --text-heading: #ececec;
+      --text-secondary: #d0d0d0;
+      --text-muted: #888;
+      --text-dim: #666;
+      --text-ghost: #555;
+      --text-faint: #4a4a50;
+      --text-off: #3a3a3f;
+      --green: #6BC67E;
+      --red: #c06060;
+      --red-bg: #2a1a1a;
+      --red-border: #3a2525;
+      --red-text: #c07070;
+      --btn-active-bg: #e0e0e0;
+      --btn-active-text: #1a1a1e;
+      --btn-disabled-bg: #3a3a40;
+      --btn-disabled-text: #666;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, var(--bg-base) 0%, #1a1a1f 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 0 80px 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* Header */
+    .header {
+      padding: 20px 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+    }
+    .header .subtitle {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .btn-export {
+      background: rgba(255,255,255,0.07);
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-export:hover { background: rgba(255,255,255,0.12); }
+
+    /* Cards */
+    .card {
+      margin: 16px 16px 0;
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    /* Date indicator */
+    .date-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .date-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .date-label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Text input */
+    .feed-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border-input);
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    .feed-input::placeholder { color: var(--text-ghost); }
+    .feed-input:focus { border-color: var(--focus-color, var(--text-ghost)); }
+
+    /* Color picker row */
+    .input-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      gap: 10px;
+    }
+    .color-swatches {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .swatch.active {
+      border-color: var(--btn-active-bg);
+      transform: scale(1.15);
+    }
+    .btn-log {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      letter-spacing: 0.2px;
+    }
+    .btn-log.active {
+      background: var(--btn-active-bg);
+      color: var(--btn-active-text);
+    }
+    .btn-log.disabled {
+      background: var(--btn-disabled-bg);
+      color: var(--btn-disabled-text);
+      cursor: default;
+    }
+
+    /* Calendar */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .month-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .day-header {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-ghost);
+      padding: 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .day-cell {
+      position: relative;
+      background: transparent;
+      border: 1.5px solid transparent;
+      border-radius: 10px;
+      padding: 6px 2px 4px;
+      cursor: pointer;
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: background 0.12s;
+      font-family: inherit;
+    }
+    .day-cell.selected { background: var(--bg-selected); }
+    .day-cell.today { border-color: #4a4a50; }
+    .day-num {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .day-num.today { font-weight: 700; color: #f0f0f0; }
+    .day-num.in-month { color: var(--text-muted); }
+    .day-num.out-month { color: var(--text-off); }
+    .day-dots {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 36px;
+    }
+    .entry-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-overflow {
+      font-size: 8px;
+      color: var(--text-dim);
+      line-height: 7px;
+    }
+
+    /* Entry list */
+    .entries-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 20px 10px;
+    }
+    .entries-header h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .entries-header .count {
+      font-size: 12px;
+      color: var(--text-ghost);
+      font-weight: 500;
+    }
+    .entries-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0 16px;
+    }
+    .empty-state {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 13px;
+      border: 1px solid var(--border);
+      margin: 0 16px;
+    }
+    .entry-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--entry-color);
+    }
+    .entry-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .entry-time {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-ghost);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .entry-text {
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text-secondary);
+      word-break: break-word;
+    }
+    .entry-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 13px;
+      color: var(--text-ghost);
+      border-radius: 6px;
+      font-family: inherit;
+      transition: color 0.12s;
+    }
+    .action-btn:hover { color: var(--text-muted); }
+    .action-btn.danger { color: var(--red); }
+
+    /* Edit inline */
+    .edit-row {
+      display: flex;
+      gap: 6px;
+    }
+    .edit-input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1.5px solid #3a3a40;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      background: var(--bg-input);
+      color: var(--text-primary);
+    }
+    .btn-save {
+      background: var(--btn-active-bg);
+      color: var(--btn-active-text);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Delete confirmation */
+    .confirm-delete {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: var(--red-bg);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--red-border);
+    }
+    .confirm-delete span { font-size: 12px; color: var(--red-text); }
+    .confirm-delete .btns { display: flex; gap: 6px; }
+    .btn-cancel {
+      background: var(--bg-selected);
+      border: 1px solid #3a3a40;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+    }
+    .btn-delete {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      height: 100dvh;
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="loading">Loading feed log...</div></div>
+
+  <script>
+    // ── Constants ──
+    const COLORS = [
+      { name: "Rose",     hex: "#F4B4B4" },
+      { name: "Peach",    hex: "#F4CBA8" },
+      { name: "Butter",   hex: "#F4E0A0" },
+      { name: "Mint",     hex: "#A8DFCB" },
+      { name: "Sky",      hex: "#A0CCD8" },
+      { name: "Lavender", hex: "#C4B0E0" },
+      { name: "Peri",     hex: "#A8B8E8" },
+      { name: "Blush",    hex: "#E8B0C8" },
+      { name: "Sage",     hex: "#B8D4A0" },
+      { name: "Sand",     hex: "#DCD0BC" },
+    ];
+    const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const MONTHS = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December",
+    ];
+    const STORAGE_KEY = "feed-tracker-entries";
+
+    // ── State ──
+    const state = {
+      entries: [],
+      text: "",
+      selectedColor: 0,
+      selectedDate: dateKey(new Date()),
+      viewYear: new Date().getFullYear(),
+      viewMonth: new Date().getMonth(),
+      editingId: null,
+      editText: "",
+      confirmDeleteId: null,
+    };
+
+    // ── Helpers ──
+    function dateKey(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+    function parseDateKey(k) {
+      const [y,m,d] = k.split("-").map(Number);
+      return new Date(y, m-1, d);
+    }
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    }
+    function todayKey() { return dateKey(new Date()); }
+
+    function getCalendarDays(year, month) {
+      const first = new Date(year, month, 1);
+      const last  = new Date(year, month+1, 0);
+      const days = [];
+      for (let i = 0; i < first.getDay(); i++) {
+        days.push({ date: new Date(year, month, -first.getDay()+i+1), inMonth: false });
+      }
+      for (let i = 1; i <= last.getDate(); i++) {
+        days.push({ date: new Date(year, month, i), inMonth: true });
+      }
+      const rem = 7 - (days.length % 7);
+      if (rem < 7) {
+        for (let i = 1; i <= rem; i++) {
+          days.push({ date: new Date(year, month+1, i), inMonth: false });
+        }
+      }
+      return days;
+    }
+
+    function entriesByDate() {
+      const map = {};
+      state.entries.forEach(e => {
+        if (!map[e.date]) map[e.date] = [];
+        map[e.date].push(e);
+      });
+      return map;
+    }
+
+    // ── Persistence ──
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state.entries = JSON.parse(raw);
+      } catch(e) { console.error("Load error:", e); }
+    }
+    function saveEntries() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+      } catch(e) { console.error("Save error:", e); }
+    }
+
+    // ── Actions ──
+    function addEntry() {
+      const trimmed = state.text.trim();
+      if (!trimmed) return;
+      state.entries.push({
+        id: generateId(),
+        date: state.selectedDate,
+        text: trimmed,
+        color: COLORS[state.selectedColor].hex,
+        colorIndex: state.selectedColor,
+        timestamp: new Date().toISOString(),
+      });
+      state.text = "";
+      saveEntries();
+      render();
+      // re-focus input
+      const inp = document.getElementById("feed-input");
+      if (inp) inp.focus();
+    }
+
+    function deleteEntry(id) {
+      state.entries = state.entries.filter(e => e.id !== id);
+      state.confirmDeleteId = null;
+      saveEntries();
+      render();
+    }
+
+    function saveEdit(id) {
+      const trimmed = state.editText.trim();
+      if (!trimmed) return;
+      state.entries = state.entries.map(e => e.id === id ? {...e, text: trimmed} : e);
+      state.editingId = null;
+      state.editText = "";
+      saveEntries();
+      render();
+    }
+
+    function exportCSV() {
+      if (state.entries.length === 0) return;
+      const sorted = [...state.entries].sort((a,b) => a.date.localeCompare(b.date) || a.timestamp.localeCompare(b.timestamp));
+      const rows = [["Date","Time","Color","Note"]];
+      sorted.forEach(e => {
+        const t = new Date(e.timestamp);
+        const time = t.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+        const colorName = COLORS[e.colorIndex]?.name || "Custom";
+        rows.push([e.date, time, colorName, `"${e.text.replace(/"/g,'""')}"`]);
+      });
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `feed-log-${todayKey()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function prevMonth() {
+      if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; }
+      else state.viewMonth--;
+      render();
+    }
+    function nextMonth() {
+      if (state.viewMonth === 11) { state.viewMonth = 0; state.viewYear++; }
+      else state.viewMonth++;
+      render();
+    }
+    function goToToday() {
+      const now = new Date();
+      state.viewYear = now.getFullYear();
+      state.viewMonth = now.getMonth();
+      state.selectedDate = dateKey(now);
+      render();
+    }
+    function selectDate(dk) {
+      state.selectedDate = dk;
+      state.editingId = null;
+      state.editText = "";
+      state.confirmDeleteId = null;
+      render();
+    }
+    function selectColor(i) {
+      state.selectedColor = i;
+      render();
+    }
+
+    // ── Escaping ──
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ── Render ──
+    function render() {
+      const today = todayKey();
+      const byDate = entriesByDate();
+      const calDays = getCalendarDays(state.viewYear, state.viewMonth);
+      const selEntries = (byDate[state.selectedDate] || [])
+        .sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+      const isToday = state.selectedDate === today;
+      const selDateObj = parseDateKey(state.selectedDate);
+      const selLabel = selDateObj.toLocaleDateString("en-US", {
+        weekday:"long", month:"long", day:"numeric",
+      });
+
+      const app = document.getElementById("app");
+      app.innerHTML = `
+        <!-- Header -->
+        <div class="header">
+          <div>
+            <h1>Feed Log</h1>
+            <div class="subtitle">Cell Culture Tracker</div>
+          </div>
+          <button class="btn-export" id="btn-export">Export CSV</button>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+          <div class="date-indicator">
+            <div class="date-dot" style="background:${isToday ? "var(--green)" : "var(--text-ghost)"}"></div>
+            <span class="date-label" style="color:${isToday ? "var(--text-secondary)" : "var(--text-dim)"}">
+              ${isToday ? "Today" : esc(selLabel)}
+            </span>
+          </div>
+          <textarea
+            id="feed-input"
+            class="feed-input"
+            rows="2"
+            placeholder="What did you feed today?"
+            style="--focus-color:${COLORS[state.selectedColor].hex}"
+          >${esc(state.text)}</textarea>
+          <div class="input-row">
+            <div class="color-swatches">
+              ${COLORS.map((c,i) => `
+                <button
+                  class="swatch ${state.selectedColor === i ? "active" : ""}"
+                  data-color="${i}"
+                  title="${c.name}"
+                  style="background:${c.hex}"
+                ></button>
+              `).join("")}
+            </div>
+            <button class="btn-log ${state.text.trim() ? "active" : "disabled"}" id="btn-log">Log</button>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="card">
+          <div class="month-nav">
+            <button class="nav-btn" id="btn-prev">&#8249;</button>
+            <span class="month-label" id="btn-today">${MONTHS[state.viewMonth]} ${state.viewYear}</span>
+            <button class="nav-btn" id="btn-next">&#8250;</button>
+          </div>
+          <div class="day-grid" style="margin-bottom:6px">
+            ${DAYS.map(d => `<div class="day-header">${d}</div>`).join("")}
+          </div>
+          <div class="day-grid">
+            ${calDays.map(({date, inMonth}) => {
+              const dk = dateKey(date);
+              const de = byDate[dk] || [];
+              const isSel = dk === state.selectedDate;
+              const isT = dk === today;
+              const numClass = isT ? "today" : (inMonth ? "in-month" : "out-month");
+              return `
+                <button
+                  class="day-cell ${isSel ? "selected" : ""} ${isT ? "today" : ""}"
+                  data-date="${dk}"
+                >
+                  <span class="day-num ${numClass}">${date.getDate()}</span>
+                  ${de.length > 0 ? `
+                    <div class="day-dots">
+                      ${de.slice(0,4).map(e => `<div class="entry-dot" style="background:${e.color}"></div>`).join("")}
+                      ${de.length > 4 ? `<span class="dot-overflow">+${de.length-4}</span>` : ""}
+                    </div>
+                  ` : ""}
+                </button>
+              `;
+            }).join("")}
+          </div>
+        </div>
+
+        <!-- Entries -->
+        <div class="entries-header">
+          <h2>${isToday ? "Today's Feeds" : esc(selLabel)}</h2>
+          <span class="count">${selEntries.length} ${selEntries.length === 1 ? "entry" : "entries"}</span>
+        </div>
+
+        ${selEntries.length === 0 ? `
+          <div class="empty-state">No feeds logged for this day</div>
+        ` : `
+          <div class="entries-list">
+            ${selEntries.map(entry => {
+              const t = new Date(entry.timestamp);
+              const timeStr = t.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+              const isEditing = state.editingId === entry.id;
+              const isConfirm = state.confirmDeleteId === entry.id;
+              return `
+                <div class="entry-card" style="--entry-color:${entry.color}">
+                  <div class="entry-top">
+                    <div style="flex:1">
+                      <span class="entry-time">${timeStr}</span>
+                      ${isEditing ? `
+                        <div class="edit-row">
+                          <input class="edit-input" id="edit-input" type="text" value="${esc(state.editText)}">
+                          <button class="btn-save" data-save="${entry.id}">Save</button>
+                        </div>
+                      ` : `
+                        <div class="entry-text">${esc(entry.text)}</div>
+                      `}
+                    </div>
+                    ${!isEditing ? `
+                      <div class="entry-actions">
+                        <button class="action-btn" data-edit="${entry.id}" title="Edit">&#9998;</button>
+                        <button class="action-btn ${isConfirm ? "danger" : ""}" data-toggle-delete="${entry.id}" title="Delete">&#10005;</button>
+                      </div>
+                    ` : ""}
+                  </div>
+                  ${isConfirm ? `
+                    <div class="confirm-delete">
+                      <span>Delete this entry?</span>
+                      <div class="btns">
+                        <button class="btn-cancel" data-cancel-delete>Cancel</button>
+                        <button class="btn-delete" data-confirm-delete="${entry.id}">Delete</button>
+                      </div>
+                    </div>
+                  ` : ""}
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `}
+      `;
+
+      // ── Bind events ──
+      // Export
+      document.getElementById("btn-export")?.addEventListener("click", exportCSV);
+
+      // Input
+      const inp = document.getElementById("feed-input");
+      if (inp) {
+        inp.addEventListener("input", e => {
+          state.text = e.target.value;
+          // update log button state without full re-render
+          const btn = document.getElementById("btn-log");
+          if (btn) {
+            const active = state.text.trim().length > 0;
+            btn.className = "btn-log " + (active ? "active" : "disabled");
+          }
+        });
+        inp.addEventListener("keydown", e => {
+          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addEntry(); }
+        });
+        // set cursor to end
+        inp.selectionStart = inp.selectionEnd = inp.value.length;
+      }
+
+      // Log button
+      document.getElementById("btn-log")?.addEventListener("click", () => {
+        if (state.text.trim()) addEntry();
+      });
+
+      // Color swatches
+      document.querySelectorAll("[data-color]").forEach(btn => {
+        btn.addEventListener("click", () => selectColor(parseInt(btn.dataset.color)));
+      });
+
+      // Calendar nav
+      document.getElementById("btn-prev")?.addEventListener("click", prevMonth);
+      document.getElementById("btn-next")?.addEventListener("click", nextMonth);
+      document.getElementById("btn-today")?.addEventListener("click", goToToday);
+
+      // Day cells
+      document.querySelectorAll("[data-date]").forEach(btn => {
+        btn.addEventListener("click", () => selectDate(btn.dataset.date));
+      });
+
+      // Edit buttons
+      document.querySelectorAll("[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.edit;
+          const entry = state.entries.find(e => e.id === id);
+          if (entry) {
+            state.editingId = id;
+            state.editText = entry.text;
+            state.confirmDeleteId = null;
+            render();
+            const ei = document.getElementById("edit-input");
+            if (ei) { ei.focus(); ei.selectionStart = ei.selectionEnd = ei.value.length; }
+          }
+        });
+      });
+
+      // Edit input
+      const editInp = document.getElementById("edit-input");
+      if (editInp) {
+        editInp.addEventListener("input", e => { state.editText = e.target.value; });
+        editInp.addEventListener("keydown", e => {
+          if (e.key === "Enter") saveEdit(state.editingId);
+          if (e.key === "Escape") { state.editingId = null; state.editText = ""; render(); }
+        });
+      }
+
+      // Save edit
+      document.querySelectorAll("[data-save]").forEach(btn => {
+        btn.addEventListener("click", () => saveEdit(btn.dataset.save));
+      });
+
+      // Toggle delete confirmation
+      document.querySelectorAll("[data-toggle-delete]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.toggleDelete;
+          state.confirmDeleteId = state.confirmDeleteId === id ? null : id;
+          render();
+        });
+      });
+
+      // Cancel delete
+      document.querySelectorAll("[data-cancel-delete]").forEach(btn => {
+        btn.addEventListener("click", () => { state.confirmDeleteId = null; render(); });
+      });
+
+      // Confirm delete
+      document.querySelectorAll("[data-confirm-delete]").forEach(btn => {
+        btn.addEventListener("click", () => deleteEntry(btn.dataset.confirmDelete));
+      });
+    }
+
+    // ── Init ──
+    loadEntries();
+    render();
+
+    // ── Service Worker Registration ──
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(err => {
+        console.log("SW registration failed:", err);
+      });
+    }
+  </script>
+</body>
+</html>
